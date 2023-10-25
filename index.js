@@ -24,6 +24,9 @@ app.listen(443, () => {
   console.log("Le serveur Express écoute sur le port 443 (HTTPS).");
 });
 
+//Si vous voulez utilisez https remplacer à la ligne 23 app -> server.  Créer un dossier SSL et y mettre les fichier du certificat
+//PS : si il vous faut changez le nom des fichier le tableau options à la ligne 17 est là pour vous 😉
+
 app.use(express.static("public"));
 app.use(useragent.express());
 
