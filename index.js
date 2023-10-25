@@ -2,6 +2,7 @@ const Version = "1.0.0";
 const lastShortcut = "https://www.icloud.com/shortcuts/fe6b4723905747e18fc21bc96ba9674d";
 const express = require("express");
 const https = require("https");
+const http = require("http")
 const fs = require("fs");
 const ejs = require("ejs");
 const path = require("path");
@@ -26,6 +27,15 @@ app.listen(443, () => {
 
 //Si vous voulez utilisez https remplacer à la ligne 23 app -> server.  Créer un dossier SSL et y mettre les fichier du certificat
 //PS : si il vous faut changez le nom des fichier le tableau options à la ligne 17 est là pour vous 😉
+
+const httpServer = http.createServer((req, res) => {
+  res.writeHead(301, { Location: `https://${req.headers.host}${req.url}` });
+  res.end();
+});
+
+httpServer.listen(80, () => {
+  console.log("Le serveur Express écoute sur le port 80 (HTTP) pour effectuer la redirection.");
+});
 
 app.use(express.static("public"));
 app.use(useragent.express());
