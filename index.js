@@ -1,4 +1,4 @@
-const Version = "1.0.0";
+const Version = "1.0.1";
 const lastShortcut = "https://www.icloud.com/shortcuts/fe6b4723905747e18fc21bc96ba9674d";
 const express = require("express");
 const https = require("https");
