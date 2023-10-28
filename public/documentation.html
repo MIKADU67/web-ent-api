@@ -17,16 +17,16 @@
   <main>
     <h2>web-ent-api.xyz/api/version</h2>
     <p>Renvoie la version de l'api</p><br>
-    <h2>web-ent-api.xyz/api/getevaluation/:token</h2>
-    <p>Renvoie la moyenne générale de l'utilisateur</p><br>
     <h2>web-ent-api.xyz/api/gethomework/:token/:date/:twodate/:nolink</h2>
     <p>Renvoie les devoirs pour la date précisée et le nombre de devoirs. Twodate : si false renvoie les devoirs justes pour la première date sinon les devoirs pour les deux dates comprises. nolink si true enlève les liens ou lien vers un fichier entre crochets si false ne les enlève pas. (les dates doivent être au format : yyyy-MM-dd Ex : 2023-10-25)</p><br>
     <h2>web-ent-api.xyz/api/getagenda/:token/:date/:twodate</h2>
     <p>Renvoie l'agenda pour la date précisée et le nombre de cours. Twodate : si false renvoie l'agenda juste pour la première date sinon l'agenda pour les deux dates comprises. (les dates doivent être au format : yyyy-MM-dd Ex : 2023-10-25)</p><br>
     <h2>web-ent-api.xyz/api/getperiodid/:token</h2>
-    <p>Renvoie de l'Id de period pour getevaluation</p><br>
-    <h2>web-ent-api.xyz/api/getevaluation/:token/:average</h2>
-    <p>Renvoie la moyenne générale de l'utilisateur si la réponse est : "Nan" le period Id n'est pas valide. average si true renvoie la moyenne générale de l'utilisateur sinon la moyenne de toutes les matières où l'utilisateur à des notes. S'il n'a pas de notes dans cette matière il ne renverra ni la moyenne ni le professeur</p>
+    <p>Renvoie de l'Id de periode pour getevaluation</p><br>
+    <h2>web-ent-api.xyz/api/getevaluation/:token/:periodid/:average</h2>
+    <p>Renvoie la moyenne générale de l'utilisateur si la réponse est : "Nan" le period Id n'est pas valide. average si true renvoie la moyenne générale de l'utilisateur sinon la moyenne de toutes les matières où l'utilisateur à des notes. S'il n'a pas de notes dans cette matière il ne renverra ni la moyenne ni le professeur</p><br>
+    <h2>web-ent-api.xyz/api/patchhomework/:token/:homeworkid</h2>
+    <p>Marque un devoir comme fait. :homeworkid se trouve avec gethomework (sous la forme : XXXXX~XXXXX, X sera un nombre de 0 à 9)</p>
   </main>
 </body>
 </html>
