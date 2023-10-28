@@ -1,12 +1,11 @@
 const Version = "1.0.1";
-const lastShortcut = "https://www.icloud.com/shortcuts/fe6b4723905747e18fc21bc96ba9674d";
+const VersionShortcut = "1.1.0";
 const express = require("express");
 const https = require("https");
 const http = require("http")
 const fs = require("fs");
 const ejs = require("ejs");
 const path = require("path");
-const multer = require("multer");
 const { Skolengo } = require('scolengo-api');
 const { compile } = require('html-to-text');
 const { v4: uuidv4 } = require('uuid');
@@ -14,16 +13,13 @@ const useragent = require('express-useragent');
 
 const app = express();
 
-
 const options = {
   key: fs.readFileSync('SSL/private.key'),
   cert: fs.readFileSync('SSL/certificate.crt'),
   ca: fs.readFileSync('SSL/ca_bundle.crt')
 };
 const server = https.createServer(options, app);
-app.listen(443, () => {
-  console.log("Le serveur Express écoute sur le port 443 (HTTPS).");
-});
+server.listen(443);
 
 //Si vous voulez utilisez https remplacer à la ligne 23 app -> server.  Créer un dossier SSL et y mettre les fichier du certificat
 //PS : si il vous faut changez le nom des fichier le tableau options à la ligne 17 est là pour vous 😉
@@ -33,9 +29,8 @@ const httpServer = http.createServer((req, res) => {
   res.end();
 });
 
-httpServer.listen(80, () => {
-  console.log("Le serveur Express écoute sur le port 80 (HTTP) pour effectuer la redirection.");
-});
+
+httpServer.listen(80);
 
 app.use(express.static("public"));
 app.use(useragent.express());
@@ -55,17 +50,6 @@ app.get("/download", (req, res) => {
 app.get("/documentation", (req, res) => {
   res.sendFile(path.join(__dirname, "public/documentation.html"));
 });
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "./uploads/");
-  },
-  filename: (req, file, cb) => {
-    cb(null, "config.json");
-  },
-});
-
-const upload = multer({ storage: storage });
 
 app.engine("html", ejs.__express);
 app.use(express.static(path.join(__dirname, "public")));
@@ -90,7 +74,6 @@ app.get('/api/gethomework/:token/:date/:twodate/:nolink', async (req, res) => {
     const studentId = user.getUserInfo().id;
 
     if (req.params.twodate == "false") {
-      console.log("1")
       const agenda = await user.getAgenda(studentId, req.params.date, req.params.date);
       const result = [];
       for (const seanceDeCours of agenda) {
@@ -104,7 +87,8 @@ app.get('/api/gethomework/:token/:date/:twodate/:nolink', async (req, res) => {
               date: DATE,
               time: TIME,
               exercice:  [devoir.html].map(compile({ wordwrap: 130 })).join('\n').replace(/(\n|\[.*?\])/g, ' '),
-              done: devoir.done
+              done: devoir.done,
+              id: devoir.id
             });
           } else {
             result.push({
@@ -127,7 +111,6 @@ app.get('/api/gethomework/:token/:date/:twodate/:nolink', async (req, res) => {
       const resultatFinal = Object.assign({}, ...resultatModifie);
       return res.json(resultatFinal);
     } else {
-      console.log("2")
       const agenda = await user.getAgenda(studentId, req.params.date, req.params.twodate);
       const result = [];
       for (const seanceDeCours of agenda) {
@@ -181,7 +164,6 @@ app.get('/api/getagenda/:token/:date/:twodate', async (req, res) => {
     const user = await Skolengo.fromConfigObject(config);
     const studentId = user.getUserInfo().id;
     if (!req.params.twodate == false) {
-      console.log("1")
       const agenda = await user.getAgenda(studentId, req.params.date, req.params.date);
       const result = [];
       for (const seanceDeCours of agenda) {
@@ -204,7 +186,6 @@ app.get('/api/getagenda/:token/:date/:twodate', async (req, res) => {
       const resultatFinal = Object.assign({}, ...resultatModifie);
       return res.json(resultatFinal);
     } else {
-      console.log("2")
       const agenda = await user.getAgenda(studentId, req.params.date, req.params.twodate);
       const result = [];
       for (const seanceDeCours of agenda) {
@@ -235,8 +216,8 @@ app.get('/api/version', async (req, res) => {
   res.json({"version": Version});
 });
 
-app.get('/api/lastshortcut', async (req, res) => {
-  res.json({"lastshortcut": lastShortcut});
+app.get('/api/versionshortcut', async (req, res) => {
+  res.json({"version": VersionShortcut});
 });
 
 app.get('/api/getevaluation/:token/:periodid/:average', async (req, res) => {
@@ -257,14 +238,14 @@ app.get('/api/getevaluation/:token/:periodid/:average', async (req, res) => {
       const user = await Skolengo.fromConfigObject(config);
       const studentId = user.getUserInfo().id;
       const Evaluation = await user.getEvaluation(studentId, req.params.periodid, 20, 0)
-      console.log(Evaluation)
       var timer = 0
       let result = []
       for (const key in Evaluation) {
         if (Evaluation[key].studentAverage !== null) {
           timer++
+          const Eval = Evaluation[key].studentAverage.toString().replace(".", ",");
           result.push({
-            average:Evaluation[key].studentAverage,
+            average:Eval,
             subject:Evaluation[key].subject.label,
             teacher:Evaluation[key].teachers[0].title+" "+Evaluation[key].teachers[0].lastName+" "+Evaluation[key].teachers[0].firstName
           });
@@ -283,7 +264,6 @@ app.get('/api/getevaluation/:token/:periodid/:average', async (req, res) => {
       const user = await Skolengo.fromConfigObject(config);
       const studentId = user.getUserInfo().id;
       const Evaluation = await user.getEvaluation(studentId, req.params.periodid, 20, 0)
-      console.log(Evaluation)
       var average = 0
       var timer = 0
       for (const key in Evaluation) {
@@ -293,9 +273,11 @@ app.get('/api/getevaluation/:token/:periodid/:average', async (req, res) => {
         }
       }
 
-      const nombre = average/timer;
+      const nombre = average / timer;
       const nombreArrondi = nombre.toFixed(2);
-      res.json({"average": nombreArrondi})
+      const Eval = nombreArrondi.toString().replace(".", ",");
+      res.json({ "average": Eval });
+         
     }
   } else {
     res.json({"error": "periodId n'est pas un nombre"})
@@ -381,6 +363,45 @@ app.get('/api/getperiodid/:token', async (req, res) => {
   const config = fichierJSON[JSONtoken];
   const user = await Skolengo.fromConfigObject(config);
   const studentId = user.getUserInfo().id;
-  const EvaluationSetting = await user.getEvaluationSettings(studentId)
-  res.json({"periodID": EvaluationSetting[0].periods[0].id})
-  })
+  const evaluationSettings = await user.getEvaluationSettings(studentId);
+  function getSemestreEnCours() {
+    const dateActuelle = new Date();
+    for (const semestre of evaluationSettings[0].periods) {
+      const dateDebut = new Date(semestre.startDate);
+      const dateFin = new Date(semestre.endDate);
+      if (dateActuelle >= dateDebut && dateActuelle <= dateFin) {
+        return semestre.id;
+      }
+    }
+    return null;
+  }
+  const semestreEnCours = getSemestreEnCours();
+  if (semestreEnCours) {
+    res.json({periodid:semestreEnCours})
+  } else {
+    res.json({periodid:"null"})
+  }
+})
+
+app.get('/api/patchhomework/:token/:homeworkid', async (req, res) => {
+  fs.appendFile("log.txt", `\n\n${new Date().toLocaleString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short' })} : Getevalution`, 'utf8', (err) => {
+    if (err) {
+      console.error('Erreur lors de l\'écriture du fichier :', err);
+    }
+  });
+  const fichierJSON = JSON.parse(fs.readFileSync('user.json', 'utf8'));
+  const JSONtoken = String(req.params.token);
+
+  if (!fichierJSON[JSONtoken]) {
+    return res.json({ error: "Invalid Token !" });
+  }
+  const config = fichierJSON[JSONtoken];
+  const user = await Skolengo.fromConfigObject(config);
+  const studentId = user.getUserInfo().id;
+  try { 
+    user.patchHomeworkAssignment(studentId, req.params.homeworkid, { done: true }) 
+  } catch(e) {
+    res.json({ success : false });
+  }
+  res.json({ success : true });
+})
