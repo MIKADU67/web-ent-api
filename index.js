@@ -1,4 +1,4 @@
-const Version = "1.0.1";
+const Version = "1.0.2";
 const VersionShortcut = "1.1.0";
 const express = require("express");
 const https = require("https");
@@ -88,7 +88,7 @@ app.get('/api/gethomework/:token/:date/:twodate/:nolink', async (req, res) => {
               time: TIME,
               exercice:  [devoir.html].map(compile({ wordwrap: 130 })).join('\n').replace(/(\n|\[.*?\])/g, ' '),
               done: devoir.done,
-              id: devoir.id
+              homeworkid: devoir.id
             });
           } else {
             result.push({
@@ -97,7 +97,8 @@ app.get('/api/gethomework/:token/:date/:twodate/:nolink', async (req, res) => {
               date: DATE,
               time: TIME,
               exercice:  [devoir.html].map(compile({ wordwrap: 130 })).join('\n').replace(/\n/g, " "),
-              done: devoir.done
+              done: devoir.done,
+              homeworkid: devoir.id
             });
           }
         }
@@ -124,7 +125,8 @@ app.get('/api/gethomework/:token/:date/:twodate/:nolink', async (req, res) => {
               date: DATE,
               time: TIME,
               exercice:  [devoir.html].map(compile({ wordwrap: 130 })).join('\n').replace(/(\n|\[.*?\])/g, ' '),
-              done: devoir.done
+              done: devoir.done,
+              homeworkid: devoir.id
             });
           } else {
             result.push({
@@ -133,7 +135,8 @@ app.get('/api/gethomework/:token/:date/:twodate/:nolink', async (req, res) => {
               date: DATE,
               time: TIME,
               exercice:  [devoir.html].map(compile({ wordwrap: 130 })).join('\n').replace(/\n/g, " "),
-              done: devoir.done
+              done: devoir.done,
+              homeworkid: devoir.id
             });
           }
         }
@@ -384,7 +387,7 @@ app.get('/api/getperiodid/:token', async (req, res) => {
 })
 
 app.get('/api/patchhomework/:token/:homeworkid', async (req, res) => {
-  fs.appendFile("log.txt", `\n\n${new Date().toLocaleString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short' })} : Getevalution`, 'utf8', (err) => {
+  fs.appendFile("log.txt", `\n\n${new Date().toLocaleString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short' })} : Patchhomework`, 'utf8', (err) => {
     if (err) {
       console.error('Erreur lors de l\'écriture du fichier :', err);
     }
