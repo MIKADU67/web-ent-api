@@ -1,4 +1,4 @@
-const Version = "1.0.2";
+const Version = "1.0.3";
 const VersionShortcut = "1.1.0";
 const express = require("express");
 const https = require("https");
@@ -78,8 +78,9 @@ app.get('/api/gethomework/:token/:date/:twodate/:nolink', async (req, res) => {
       const result = [];
       for (const seanceDeCours of agenda) {
         for (const devoir of seanceDeCours.homeworkAssignments) {
-          const string = new Date(devoir.dueDateTime).toLocaleString();
-          const [DATE, TIME] = string.split(" ");
+          const options = { timeZone: 'Europe/Paris', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' };
+          const string = new Date(devoir.dueDateTime).toLocaleString('fr-FR', options);
+          const [DATE, TIME] = string.split(" à ");
           if (req.params.nolink == "true") {
             result.push({
               subject: devoir.subject.label,
@@ -116,8 +117,9 @@ app.get('/api/gethomework/:token/:date/:twodate/:nolink', async (req, res) => {
       const result = [];
       for (const seanceDeCours of agenda) {
         for (const devoir of seanceDeCours.homeworkAssignments) {
-          const string = new Date(devoir.dueDateTime).toLocaleString();
-          const [DATE, TIME] = string.split(" ");
+          const options = { timeZone: 'Europe/Paris', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' };
+          const string = new Date(devoir.dueDateTime).toLocaleString('fr-FR', options);
+          const [DATE, TIME] = string.split(" à ");
           if (req.params.nolink == "true") {
             result.push({
               subject: devoir.subject.label,
@@ -169,17 +171,24 @@ app.get('/api/getagenda/:token/:date/:twodate', async (req, res) => {
     if (!req.params.twodate == false) {
       const agenda = await user.getAgenda(studentId, req.params.date, req.params.date);
       const result = [];
+      const options = { timeZone: 'Europe/Paris', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' };
       for (const seanceDeCours of agenda) {
         for (const lesson of seanceDeCours.lessons) {
-          const string = new Date(lesson.startDateTime).toLocaleString();
-          const [DATE, TIME] = string.split(" ");
+          const startDateTimeString = new Date(lesson.startDateTime).toLocaleString('fr-FR', options);
+          const endDateTimeString = new Date(lesson.endDateTime).toLocaleString('fr-FR', options);
+      
+          const [DATE, TIME] = startDateTimeString.split(" à ");
+          const [DATE2, TIME2] = endDateTimeString.split(" à ");
+      
           result.push({
-            Lesson:lesson.subject.label,
-            Date:DATE,
-            Time:TIME
+            lesson: lesson.subject.label,
+            date: DATE,
+            time: TIME,
+            endTime: TIME2
           });
         }
       }
+      
       const resultatModifie = result.map((agenda, index) => {
         return {
           [`agenda${index+1}`]: agenda
@@ -190,18 +199,25 @@ app.get('/api/getagenda/:token/:date/:twodate', async (req, res) => {
       return res.json(resultatFinal);
     } else {
       const agenda = await user.getAgenda(studentId, req.params.date, req.params.twodate);
-      const result = [];
+      const options = { timeZone: 'Europe/Paris', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' };
       for (const seanceDeCours of agenda) {
         for (const lesson of seanceDeCours.lessons) {
-          const string = new Date(lesson.startDateTime).toLocaleString();
-          const [DATE, TIME] = string.split(" ");
+          const startDateTimeString = new Date(lesson.startDateTime).toLocaleString('fr-FR', options);
+          const endDateTimeString = new Date(lesson.endDateTime).toLocaleString('fr-FR', options);
+      
+          const [DATE, TIME] = startDateTimeString.split(" à ");
+          const [DATE2, TIME2] = endDateTimeString.split(" à ");
+      
           result.push({
-            lesson:lesson.subject.label,
-            date:DATE,
-            time:TIME
+            lesson: lesson.subject.label,
+            date: DATE,
+            time: TIME,
+            endTime: TIME2
           });
         }
       }
+      
+      
       const resultatModifie = result.map((lesson, index) => {
         return {
             [`lesson${index+1}`]: lesson
@@ -408,3 +424,4 @@ app.get('/api/patchhomework/:token/:homeworkid', async (req, res) => {
   }
   res.json({ success : true });
 })
+
