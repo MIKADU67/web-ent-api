@@ -1,5 +1,6 @@
-const Version = "1.0.4";
+const Version = "1.0.5";
 const VersionShortcut = "1.1.0";
+const lastShortcut = "https://www.icloud.com/shortcuts/63f7fc2dfc2d4710a51a79f1e7341de3"
 const express = require("express");
 const https = require("https");
 const http = require("http")
@@ -180,7 +181,8 @@ app.get('/api/getagenda/:token/:date/:twodate', async (req, res) => {
           result.push({
             lesson: lesson.subject.label,
             startDate: startDateTimeString,
-            endDate: endDateTimeString
+            endDate: endDateTimeString,
+            teacher:lesson.teachers[0].title+" "+lesson.teachers[0].lastName+" "+lesson.teachers[0].firstName
           });
         }
       }
@@ -205,7 +207,8 @@ app.get('/api/getagenda/:token/:date/:twodate', async (req, res) => {
           result.push({
             lesson: lesson.subject.label,
             startDate: startDateTimeString,
-            endDate: endDateTimeString
+            endDate: endDateTimeString,
+            teacher:lesson.teachers[0].title+" "+lesson.teachers[0].lastName+" "+lesson.teachers[0].firstName
           });
         }
       }
@@ -230,6 +233,10 @@ app.get('/api/version', async (req, res) => {
 
 app.get('/api/versionshortcut', async (req, res) => {
   res.json({"version": VersionShortcut});
+});
+
+app.get('/api/lastshortcut', async (req, res) => {
+  res.json({"lastshortcut": lastShortcut});
 });
 
 app.get('/api/getevaluation/:token/:periodid/:average', async (req, res) => {
