@@ -1,4 +1,4 @@
-const Version = "1.0.3";
+const Version = "1.0.4";
 const VersionShortcut = "1.1.0";
 const express = require("express");
 const https = require("https");
@@ -168,7 +168,7 @@ app.get('/api/getagenda/:token/:date/:twodate', async (req, res) => {
     const config = fichierJSON[JSONtoken];
     const user = await Skolengo.fromConfigObject(config);
     const studentId = user.getUserInfo().id;
-    if (!req.params.twodate == false) {
+    if (req.params.twodate == false) {
       const agenda = await user.getAgenda(studentId, req.params.date, req.params.date);
       const result = [];
       const options = { timeZone: 'Europe/Paris', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' };
@@ -177,14 +177,10 @@ app.get('/api/getagenda/:token/:date/:twodate', async (req, res) => {
           const startDateTimeString = new Date(lesson.startDateTime).toLocaleString('fr-FR', options);
           const endDateTimeString = new Date(lesson.endDateTime).toLocaleString('fr-FR', options);
       
-          const [DATE, TIME] = startDateTimeString.split(" à ");
-          const [DATE2, TIME2] = endDateTimeString.split(" à ");
-      
           result.push({
             lesson: lesson.subject.label,
-            date: DATE,
-            time: TIME,
-            endTime: TIME2
+            startDate: startDateTimeString,
+            endDate: endDateTimeString
           });
         }
       }
@@ -199,32 +195,29 @@ app.get('/api/getagenda/:token/:date/:twodate', async (req, res) => {
       return res.json(resultatFinal);
     } else {
       const agenda = await user.getAgenda(studentId, req.params.date, req.params.twodate);
+      const result = [];
       const options = { timeZone: 'Europe/Paris', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' };
       for (const seanceDeCours of agenda) {
         for (const lesson of seanceDeCours.lessons) {
           const startDateTimeString = new Date(lesson.startDateTime).toLocaleString('fr-FR', options);
           const endDateTimeString = new Date(lesson.endDateTime).toLocaleString('fr-FR', options);
       
-          const [DATE, TIME] = startDateTimeString.split(" à ");
-          const [DATE2, TIME2] = endDateTimeString.split(" à ");
-      
           result.push({
             lesson: lesson.subject.label,
-            date: DATE,
-            time: TIME,
-            endTime: TIME2
+            startDate: startDateTimeString,
+            endDate: endDateTimeString
           });
         }
       }
       
-      
-      const resultatModifie = result.map((lesson, index) => {
+      const resultatModifie = result.map((agenda, index) => {
         return {
-            [`lesson${index+1}`]: lesson
+          [`agenda${index+1}`]: agenda
         };
       });
       resultatModifie.push({ number: result.length });
       const resultatFinal = Object.assign({}, ...resultatModifie);
+      return res.json(resultatFinal);
     }
   } catch (error) {
     return res.json({ error: "Une erreur s'est produite, merci de la reporter : " + error });
@@ -424,4 +417,3 @@ app.get('/api/patchhomework/:token/:homeworkid', async (req, res) => {
   }
   res.json({ success : true });
 })
-
