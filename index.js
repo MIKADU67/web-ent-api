@@ -1,7 +1,7 @@
-const Version = "1.0.5";
-const VersionShortcut = "1.1.0";
-const lastShortcut = "https://www.icloud.com/shortcuts/63f7fc2dfc2d4710a51a79f1e7341de3"
-const express = require("express");
+const Version = "1.1.0";
+const VersionShortcut = "1.2.0";
+const lastShortcut = "https://www.icloud.com/shortcuts/ee962aa344c445f494baa8f8a57e80cb"
+const express = require("express"); 
 const https = require("https");
 const http = require("http")
 const fs = require("fs");
@@ -64,16 +64,13 @@ app.get('/api/gethomework/:token/:date/:twodate/:nolink', async (req, res) => {
         console.error('Erreur lors de l\'écriture du fichier :', err);
       }
     });
-    const fichierJSON = JSON.parse(fs.readFileSync('user.json', 'utf8'));
-    const JSONtoken = String(req.params.token);
-
-    if (!fichierJSON[JSONtoken]) {
-      return res.json({ error: "Invalid Token !" });
+    const config = await getConfig(req.params.token)
+    if ("error" in config) {
+      res.json(config);
+      return;
     }
-    const config = fichierJSON[JSONtoken];
     const user = await Skolengo.fromConfigObject(config);
     const studentId = user.getUserInfo().id;
-
     if (req.params.twodate == "false") {
       const agenda = await user.getAgenda(studentId, req.params.date, req.params.date);
       const result = [];
@@ -161,12 +158,11 @@ app.get('/api/gethomework/:token/:date/:twodate/:nolink', async (req, res) => {
 app.get('/api/getagenda/:token/:date/:twodate', async (req, res) => {
   try {
     fs.appendFile("log.txt", `\n\n${new Date().toLocaleString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short' })} : Getagenda`, 'utf8', (err) => {});
-    const fichierJSON = JSON.parse(fs.readFileSync('user.json', 'utf8'));
-    const JSONtoken = String(req.params.token);
-    if (!fichierJSON[JSONtoken]) {
-      return res.json({ error: "Invalid Token !" });
+    const config = await getConfig(req.params.token)
+    if ("error" in config) {
+      res.json(config);
+      return;
     }
-    const config = fichierJSON[JSONtoken];
     const user = await Skolengo.fromConfigObject(config);
     const studentId = user.getUserInfo().id;
     if (req.params.twodate == false) {
@@ -245,15 +241,13 @@ app.get('/api/getevaluation/:token/:periodid/:average', async (req, res) => {
       console.error('Erreur lors de l\'écriture du fichier :', err);
     }
   });
-  const fichierJSON = JSON.parse(fs.readFileSync('user.json', 'utf8'));
-  const JSONtoken = String(req.params.token);
-
-  if (!fichierJSON[JSONtoken]) {
-    return res.json({ error: "Invalid Token !" });
-  }
   if (!isNaN(req.params.periodid)) {
     if (req.params.average == "false") {
-      const config = fichierJSON[JSONtoken];
+      const config = await getConfig(req.params.token)
+      if ("error" in config) {
+        res.json(config);
+        return;
+      }
       const user = await Skolengo.fromConfigObject(config);
       const studentId = user.getUserInfo().id;
       const Evaluation = await user.getEvaluation(studentId, req.params.periodid, 20, 0)
@@ -279,7 +273,11 @@ app.get('/api/getevaluation/:token/:periodid/:average', async (req, res) => {
       const resultatFinal = Object.assign({}, ...resultatModifie);
       return res.json(resultatFinal)
     } else {
-      const config = fichierJSON[JSONtoken];
+      const config = await getConfig(req.params.token)
+      if ("error" in config) {
+        res.json(config);
+        return;
+      }
       const user = await Skolengo.fromConfigObject(config);
       const studentId = user.getUserInfo().id;
       const Evaluation = await user.getEvaluation(studentId, req.params.periodid, 20, 0)
@@ -303,30 +301,6 @@ app.get('/api/getevaluation/:token/:periodid/:average', async (req, res) => {
   }
 });
 
-async function refreshToken() {
-  fs.appendFile("log.txt", `\n\n${new Date().toLocaleString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short' })} : Refresh Token...`, 'utf8', (err) => {});
-  try {
-    const contenuFichier = fs.readFileSync("user.json", 'utf8');
-    const obj = JSON.parse(contenuFichier);
-    const promises = [];
-    for (const cle in obj) {
-      if (obj.hasOwnProperty(cle)) {
-        const promise = Skolengo.fromConfigObject(obj[cle])
-        .then(async user => {
-          const newToken = await user.refreshToken();
-          obj[cle].tokenSet = newToken;
-        });
-        promises.push(promise);
-      }
-    }
-    await Promise.all(promises);
-    fs.writeFileSync('user.json', JSON.stringify(obj, null, 2), 'utf8');
-  } catch (erreur) {
-    console.error('Une erreur s\'est produite lors de la lecture du fichier JSON :', erreur);
-  }
-}
-setInterval(refreshToken, 3600000);
-
 app.use(express.json());
 app.post('/uploadtoken', (req, res) => {
   var newUuid = uuidv4();
@@ -343,13 +317,22 @@ app.post('/uploadtoken', (req, res) => {
       ID = infoUser.id
       const promises = [];
       for (const key in myTable) {
-        promises.push(
-          Skolengo.fromConfigObject(myTable[key]).then(async user => {
-            if (ID == (await user.getUserInfo()).id) {
-              delete myTable[key];
-            }
-          })
-        );
+        await getConfig(key)
+        fs.readFile('user.json', 'utf8', (err, newUserJson) => {
+          if (err) {
+            return;
+          }
+          const myNewTable = JSON.parse(newUserJson);
+          if (key in myNewTable) {
+            promises.push(
+              Skolengo.fromConfigObject(myNewTable[key]).then(async user => {
+                if (ID == (await user.getUserInfo()).id) {
+                  delete myNewTable[key];
+                }
+              })
+            );
+          }
+        })
       }
       Promise.all(promises)
       .then(() => {
@@ -368,18 +351,16 @@ app.post('/uploadtoken', (req, res) => {
 
 
 app.get('/api/getperiodid/:token', async (req, res) => {
-  fs.appendFile("log.txt", `\n\n${new Date().toLocaleString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short' })} : Getevalution`, 'utf8', (err) => {
+  fs.appendFile("log.txt", `\n\n${new Date().toLocaleString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short' })} : Getperiodid`, 'utf8', (err) => {
     if (err) {
       console.error('Erreur lors de l\'écriture du fichier :', err);
     }
   });
-  const fichierJSON = JSON.parse(fs.readFileSync('user.json', 'utf8'));
-  const JSONtoken = String(req.params.token);
-
-  if (!fichierJSON[JSONtoken]) {
-    return res.json({ error: "Invalid Token !" });
+  const config = await getConfig(req.params.token)
+  if ("error" in config) {
+    res.json(config);
+    return;
   }
-  const config = fichierJSON[JSONtoken];
   const user = await Skolengo.fromConfigObject(config);
   const studentId = user.getUserInfo().id;
   const evaluationSettings = await user.getEvaluationSettings(studentId);
@@ -408,13 +389,11 @@ app.get('/api/patchhomework/:token/:homeworkid', async (req, res) => {
       console.error('Erreur lors de l\'écriture du fichier :', err);
     }
   });
-  const fichierJSON = JSON.parse(fs.readFileSync('user.json', 'utf8'));
-  const JSONtoken = String(req.params.token);
-
-  if (!fichierJSON[JSONtoken]) {
-    return res.json({ error: "Invalid Token !" });
+  const config = await getConfig(req.params.token)
+  if ("error" in config) {
+    res.json(config);
+    return;
   }
-  const config = fichierJSON[JSONtoken];
   const user = await Skolengo.fromConfigObject(config);
   const studentId = user.getUserInfo().id;
   try { 
@@ -424,3 +403,40 @@ app.get('/api/patchhomework/:token/:homeworkid', async (req, res) => {
   }
   res.json({ success : true });
 })
+
+
+
+async function getConfig(tokenId) {
+  const fichierJSON = JSON.parse(fs.readFileSync('user.json', 'utf8'));
+
+  if (!fichierJSON[tokenId]) {
+    return({error : "Invalide token !"});
+  } else {
+    const config = fichierJSON[tokenId];
+    const user = await Skolengo.fromConfigObject(config);
+    const expires_at = user.tokenSet.claims().exp
+    if (Math.floor(new Date().getTime()/1000.0) <= expires_at) {
+      return config
+    } else if (Math.floor(new Date().getTime()/1000.0) <= expires_at + 1_728_000) {
+      try {
+        fs.appendFile("log.txt", `\n\n${new Date().toLocaleString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short' })} : Refresh token`, 'utf8', (err) => {
+          if (err) {
+            console.error('Erreur lors de l\'écriture du fichier :', err);
+          }
+        });
+        Skolengo.fromConfigObject(config).then(async user => {
+        config.tokenSet = await user.refreshToken();
+        fichierJSON[tokenId] = config
+        });
+        fs.writeFileSync('user.json', JSON.stringify(fichierJSON), 'utf8');
+        return config;
+      } catch (erreur) {
+        console.error('Une erreur s\'est produite lors de la lecture du fichier JSON :', erreur);
+      }
+    } else {
+      delete fichierJSON[tokenId];
+      fs.writeFileSync('user.json', JSON.stringify(fichierJSON), 'utf8');
+      return({error : "Expired token !", message : "Votre token a été désactivé car inactif depuis plus de 21 jours merci de vous reconnecter avec token_generator"});
+    }
+  }
+}
